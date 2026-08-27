@@ -205,6 +205,10 @@ jobs:
             $args += "--new-window"
           }
 
+          # [2026-08-27] 加 --no-bundle：跳过 MSI/NSIS 安装包生成，
+          # 只保留 Tauri 编译好的 raw exe，让用户能直接双击运行。
+          $args += "--no-bundle"
+
           Write-Host "Running: node dist/cli.js $($args -join ' ')"
           node dist/cli.js $args
 
@@ -215,15 +219,16 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.name }}-macOS
-          path: ${{ inputs.name }}.dmg
+          path: "*.dmg"
           retention-days: 3
+          if-no-files-found: error
 
       - name: Upload DEB (Linux)
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.name }}-Linux-deb
-          path: ${{ inputs.name }}.deb
+          path: "*.deb"
           retention-days: 3
           if-no-files-found: ignore
 
@@ -232,7 +237,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.name }}-Linux-AppImage
-          path: ${{ inputs.name }}.AppImage
+          path: "*.AppImage"
           retention-days: 3
           if-no-files-found: ignore
 
@@ -241,7 +246,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.name }}-Linux-rpm
-          path: ${{ inputs.name }}.rpm
+          path: "*.rpm"
           retention-days: 3
           if-no-files-found: ignore
 
@@ -250,17 +255,21 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.name }}-Linux-zst
-          path: ${{ inputs.name }}-*.pkg.tar.zst
+          path: "*.pkg.tar.zst"
           retention-days: 3
           if-no-files-found: ignore
 
-      - name: Upload MSI (Windows)
+      # [2026-08-27] 改用 raw exe（不再上传 MSI 安装包）。
+      # pake-cli 加了 --no-bundle，raw exe 落在 src-tauri/target/release/<name>.exe。
+      # if-no-files-found: error 让 build 真失败时 fail run，artifact 不再是空 zip。
+      - name: Upload raw exe (Windows, --no-bundle)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.name }}-Windows
-          path: ${{ inputs.name }}.msi
+          path: src-tauri/target/release/${{ inputs.name }}.exe
           retention-days: 3
+          if-no-files-found: error
 
       - name: Rust cache store
         uses: actions/cache/save@v4.2.0
