@@ -260,14 +260,28 @@ jobs:
           if-no-files-found: ignore
 
       # [2026-08-27] 改用 raw exe（不再上传 MSI 安装包）。
-      # pake-cli 加了 --no-bundle，raw exe 落在 src-tauri/target/release/<name>.exe。
+      # pake-cli 加了 --no-bundle 后，binary 名 = `pake-<name>.exe`，
+      # 实际路径 = src-tauri/target/<target-triple>/release/。
+      # 用 glob 兼容 x64（x86_64-pc-windows-msvc）/ arm64（aarch64-pc-windows-msvc）。
       # if-no-files-found: error 让 build 真失败时 fail run，artifact 不再是空 zip。
+      - name: Strip "pake-" prefix from binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $name = "${{ inputs.name }}"
+          Get-ChildItem -Path "src-tauri/target" -Recurse -Filter "pake-$name.exe" |
+            ForEach-Object {
+              $new = $_.DirectoryName + "\$name.exe"
+              Write-Host "Rename: $($_.FullName) -> $new"
+              Move-Item -LiteralPath $_.FullName -Destination $new -Force
+            }
+
       - name: Upload raw exe (Windows, --no-bundle)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.name }}-Windows
-          path: src-tauri/target/*/release/pake-${{ inputs.name }}.exe
+          path: src-tauri/target/*/release/${{ inputs.name }}.exe
           retention-days: 3
           if-no-files-found: error
 
