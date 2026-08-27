@@ -267,7 +267,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.name }}-Windows
-          path: src-tauri/target/release/${{ inputs.name }}.exe
+          path: src-tauri/target/*/release/pake-${{ inputs.name }}.exe
           retention-days: 3
           if-no-files-found: error
 
